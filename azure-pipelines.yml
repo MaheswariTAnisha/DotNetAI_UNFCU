@@ -1,0 +1,27 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+
+- task: UseDotNet@2
+  inputs:
+    packageType: 'sdk'
+    version: '8.x'
+
+- script: dotnet build
+  displayName: 'Build .NET App'
+
+# Capture logs after failure
+- script: |
+    echo "Saving logs..."
+    find . -name "*.log" -exec cat {} \; > pipeline.log || true
+  condition: failed()
+
+# Run AI analysis
+- script: |
+    pip install openai
+    python analyze_logs.py
+  condition: failed()
