@@ -4,10 +4,6 @@ trigger:
 pool:
   vmImage: 'ubuntu-latest'
 
-variables:
-- name: OPENAI_API_KEY
-  value: $(OPENAI_API_KEY)
-
 steps:
 
 # Install .NET
@@ -17,14 +13,9 @@ steps:
     version: '8.x'
 
 # Build app
-- script: dotnet build wrong.csproj
-  displayName: 'Build .NET App'
-
-# Capture logs if failure
 - script: |
-    echo "Saving logs..."
-    find . -name "*.log" -exec cat {} \; > pipeline.log || true
-  condition: failed()
+    dotnet build wrong.csproj > pipeline.log 2>&1 || true
+  displayName: 'Build .NET App'
 
 # Setup Python
 - task: UsePythonVersion@0
