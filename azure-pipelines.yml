@@ -14,7 +14,17 @@ steps:
 
 # Build app
 - script: |
-    dotnet build wrong.csproj > pipeline.log 2>&1 || true
+    echo "Running build..."
+    dotnet build wrong.csproj > pipeline.log 2>&1
+    exit_code=$?
+
+    echo "Build exit code: $exit_code"
+
+    if [ $exit_code -ne 0 ]; then
+      echo "Build failed, but continuing for AI analysis..."
+    fi
+
+    exit $exit_code
   displayName: 'Build .NET App'
 
 # Setup Python
