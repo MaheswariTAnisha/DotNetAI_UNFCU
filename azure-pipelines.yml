@@ -17,7 +17,7 @@ steps:
     version: '8.x'
 
 # Build app
-- script: dotnet build
+- script: dotnet build wrong.csproj
   displayName: 'Build .NET App'
 
 # Capture logs if failure
