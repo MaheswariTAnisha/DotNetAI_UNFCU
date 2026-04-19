@@ -4,24 +4,44 @@ trigger:
 pool:
   vmImage: 'ubuntu-latest'
 
+variables:
+- name: OPENAI_API_KEY
+  value: $(OPENAI_API_KEY)
+
 steps:
 
+# Install .NET
 - task: UseDotNet@2
   inputs:
     packageType: 'sdk'
     version: '8.x'
 
+# Build app
 - script: dotnet build
   displayName: 'Build .NET App'
 
-# Capture logs after failure
+# Capture logs if failure
 - script: |
     echo "Saving logs..."
     find . -name "*.log" -exec cat {} \; > pipeline.log || true
   condition: failed()
 
-# Run AI analysis
+# Setup Python
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.x'
+
+# Install dependencies
 - script: |
+    python -m pip install --upgrade pip
     pip install openai
+  displayName: 'Install Python dependencies'
+  condition: failed()
+
+# Run AI log analysis
+- script: |
     python analyze_logs.py
+  env:
+    OPENAI_API_KEY: $(OPENAI_API_KEY)
+  displayName: 'Run AI Log Analysis'
   condition: failed()
