@@ -1,7 +1,12 @@
 import os
-from openai import OpenAI
+import requests
+import json
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+API_URL = "https://api-inference.huggingface.co/models/google/flan-t5-large"
+
+headers = {
+    "Authorization": "Bearer " + os.getenv("HF_TOKEN")
+}
 
 # Read logs
 try:
@@ -10,8 +15,8 @@ try:
 except:
     logs = "No logs found"
 
-# Limit log size (important)
-logs = logs[:5000]
+# Limit size
+logs = logs[:2000]
 
 prompt = f"""
 You are a DevOps expert.
@@ -30,13 +35,16 @@ Log:
 """
 
 try:
-    response = client.responses.create(
-        model="gpt-4o-mini",
-        input=prompt
+    response = requests.post(
+        API_URL,
+        headers=headers,
+        json={"inputs": prompt}
     )
 
+    result = response.json()
+
     print("===== AI RCA RESULT =====")
-    print(response.output_text)
+    print(json.dumps(result, indent=2))
 
 except Exception as e:
     print("AI Analysis Failed:", str(e))

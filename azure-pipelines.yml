@@ -12,7 +12,7 @@ steps:
     packageType: 'sdk'
     version: '8.x'
 
-# Build app
+# Build app (intentionally capturing logs)
 - script: |
     echo "Running build..."
     dotnet build wrong.csproj > pipeline.log 2>&1
@@ -27,22 +27,30 @@ steps:
     exit $exit_code
   displayName: 'Build .NET App'
 
+# Print logs (for visibility)
+- script: |
+    echo "===== PIPELINE LOGS ====="
+    cat pipeline.log
+  displayName: 'Print Logs'
+  condition: failed()
+
 # Setup Python
 - task: UsePythonVersion@0
   inputs:
     versionSpec: '3.x'
+  condition: failed()
 
 # Install dependencies
 - script: |
     python -m pip install --upgrade pip
-    pip install openai
+    pip install requests
   displayName: 'Install Python dependencies'
   condition: failed()
 
-# Run AI log analysis
+# Run AI log analysis (HuggingFace)
 - script: |
     python analyze_logs.py
   env:
-    OPENAI_API_KEY: $(OPENAI_API_KEY)
+    HF_TOKEN: $(HF_TOKEN)
   displayName: 'Run AI Log Analysis'
   condition: failed()
