@@ -1,8 +1,9 @@
 import os
 import requests
 import json
+import time
 
-API_URL = "https://api-inference.huggingface.co/models/google/flan-t5-large"
+API_URL = "https://api-inference.huggingface.co/models/google/flan-t5-base"
 
 headers = {
     "Authorization": f"Bearer {os.getenv('HF_TOKEN')}",
@@ -16,14 +17,14 @@ try:
 except:
     logs = "No logs found"
 
-logs = logs[:2000]
+logs = logs[:1500]
 
 prompt = f"""
 You are a DevOps expert.
 
 Analyze this Azure DevOps pipeline failure log.
 
-Provide output strictly in JSON:
+Return ONLY JSON:
 {{
   "error_type": "",
   "root_cause": "",
@@ -36,30 +37,40 @@ Log:
 
 print("Calling HuggingFace API...")
 
-response = requests.post(
-    API_URL,
-    headers=headers,
-    json={"inputs": prompt}
-)
+for i in range(2):  # retry once
+    response = requests.post(
+        API_URL,
+        headers=headers,
+        json={"inputs": prompt}
+    )
 
-print("Status Code:", response.status_code)
-print("Raw Response:", response.text)
+    print("Status Code:", response.status_code)
+    print("Raw Response:", response.text)
 
-# Handle response safely
-if response.status_code == 200:
-    try:
-        result = response.json()
-        print("===== AI RCA RESULT =====")
-        print(json.dumps(result, indent=2))
-    except:
-        print("JSON parsing failed")
-else:
-    print("API call failed")
+    if response.status_code == 200:
+        try:
+            result = response.json()
 
-    fallback = {
-        "error_type": "Build Failure",
-        "root_cause": "HuggingFace API error",
-        "fix_suggestion": "Check API endpoint or token"
-    }
+            print("===== AI RCA RESULT =====")
+            print(json.dumps(result, indent=2))
+            break
+        except:
+            print("JSON parsing failed")
+            break
 
-    print(json.dumps(fallback, indent=2))
+    elif "loading" in response.text.lower():
+        print("Model loading... retrying in 10 sec")
+        time.sleep(10)
+    else:
+        print("API call failed")
+        break
+
+# Fallback (always safe)
+fallback = {
+    "error_type": "Build Failure",
+    "root_cause": "AI response unavailable",
+    "fix_suggestion": "Check logs manually"
+}
+
+print("===== FALLBACK RESULT =====")
+print(json.dumps(fallback, indent=2))
