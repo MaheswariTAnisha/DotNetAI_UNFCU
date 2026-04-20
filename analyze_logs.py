@@ -5,7 +5,8 @@ import json
 API_URL = "https://api-inference.huggingface.co/models/google/flan-t5-large"
 
 headers = {
-    "Authorization": "Bearer " + os.getenv("HF_TOKEN")
+    "Authorization": f"Bearer {os.getenv('HF_TOKEN')}",
+    "Content-Type": "application/json"
 }
 
 # Read logs
@@ -41,23 +42,24 @@ response = requests.post(
     json={"inputs": prompt}
 )
 
-print("Raw response:")
-print(response.text)   # 🔥 DEBUG (IMPORTANT)
+print("Status Code:", response.status_code)
+print("Raw Response:", response.text)
 
-try:
-    result = response.json()
+# Handle response safely
+if response.status_code == 200:
+    try:
+        result = response.json()
+        print("===== AI RCA RESULT =====")
+        print(json.dumps(result, indent=2))
+    except:
+        print("JSON parsing failed")
+else:
+    print("API call failed")
 
-    print("===== AI RCA RESULT =====")
-    print(json.dumps(result, indent=2))
-
-except Exception as e:
-    print("JSON parsing failed. Using fallback.")
-
-    # Fallback logic
     fallback = {
         "error_type": "Build Failure",
-        "root_cause": "Unable to parse AI response",
-        "fix_suggestion": "Check logs manually or retry API"
+        "root_cause": "HuggingFace API error",
+        "fix_suggestion": "Check API endpoint or token"
     }
 
     print(json.dumps(fallback, indent=2))
