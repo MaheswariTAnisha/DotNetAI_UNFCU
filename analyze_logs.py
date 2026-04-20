@@ -15,7 +15,6 @@ try:
 except:
     logs = "No logs found"
 
-# Limit size
 logs = logs[:2000]
 
 prompt = f"""
@@ -34,17 +33,31 @@ Log:
 {logs}
 """
 
-try:
-    response = requests.post(
-        API_URL,
-        headers=headers,
-        json={"inputs": prompt}
-    )
+print("Calling HuggingFace API...")
 
+response = requests.post(
+    API_URL,
+    headers=headers,
+    json={"inputs": prompt}
+)
+
+print("Raw response:")
+print(response.text)   # 🔥 DEBUG (IMPORTANT)
+
+try:
     result = response.json()
 
     print("===== AI RCA RESULT =====")
     print(json.dumps(result, indent=2))
 
 except Exception as e:
-    print("AI Analysis Failed:", str(e))
+    print("JSON parsing failed. Using fallback.")
+
+    # Fallback logic
+    fallback = {
+        "error_type": "Build Failure",
+        "root_cause": "Unable to parse AI response",
+        "fix_suggestion": "Check logs manually or retry API"
+    }
+
+    print(json.dumps(fallback, indent=2))
