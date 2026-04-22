@@ -2,8 +2,7 @@ trigger:
 - main
 
 pool:
-  name: 'windows'        # ← your self-hosted pool name
-  # vmImage line removed — not needed for self-hosted
+  name: 'windows'
 
 lockBehavior: sequential
 
@@ -27,12 +26,8 @@ steps:
   displayName: 'Print Logs'
   condition: failed()
 
-- task: UsePythonVersion@0
-  inputs:
-    versionSpec: '3.x'
-  condition: failed()
-
 - script: |
+    python --version
     pip install requests
   displayName: 'Install Python deps'
   condition: failed()
@@ -41,4 +36,3 @@ steps:
     python analyze_logs.py
   displayName: 'Run AI Log Analysis (Ollama)'
   condition: failed()
-  # No env/API key needed — Ollama is local
