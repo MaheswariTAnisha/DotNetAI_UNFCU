@@ -15,16 +15,13 @@ steps:
 - script: |
     echo "Running build..."
     dotnet build wrong.csproj > pipeline.log 2>&1
-    exit_code=$?
-    if [ $exit_code -ne 0 ]; then
-      echo "Build failed, running AI analysis..."
-    fi
-    exit $exit_code
+    echo Build exit code: %ERRORLEVEL%
+    exit /b %ERRORLEVEL%
   displayName: 'Build .NET App'
 
 - script: |
     echo "===== PIPELINE LOGS ====="
-    cat pipeline.log
+    type pipeline.log
   displayName: 'Print Logs'
   condition: failed()
 
