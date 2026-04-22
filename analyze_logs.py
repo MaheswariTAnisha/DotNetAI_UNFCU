@@ -1,30 +1,18 @@
-import os
 import requests
 import json
-import time
 
-API_URL = "https://api-inference.huggingface.co/models/google/flan-t5-base"
-
-headers = {
-    "Authorization": f"Bearer {os.getenv('HF_TOKEN')}",
-    "Content-Type": "application/json"
-}
-
-# Read logs
 try:
     with open("pipeline.log", "r") as f:
         logs = f.read()
-except:
-    logs = "No logs found"
+except Exception as e:
+    logs = f"No logs found: {e}"
 
-logs = logs[:1500]
+logs = logs[:4000]
 
 prompt = f"""
 You are a DevOps expert.
-
 Analyze this Azure DevOps pipeline failure log.
-
-Return ONLY JSON:
+Respond ONLY with raw JSON, no markdown, no extra text:
 {{
   "error_type": "",
   "root_cause": "",
@@ -35,42 +23,30 @@ Log:
 {logs}
 """
 
-print("Calling HuggingFace API...")
+print("Calling Ollama (local)...")
 
-for i in range(2):  # retry once
+try:
     response = requests.post(
-        API_URL,
-        headers=headers,
-        json={"inputs": prompt}
+        "http://localhost:11434/api/generate",
+        json={
+            "model": "llama3",   # make sure this matches: ollama list
+            "prompt": prompt,
+            "stream": False
+        },
+        timeout=120              # llama3 can be slow, give it time
     )
 
-    print("Status Code:", response.status_code)
-    print("Raw Response:", response.text)
+    result = response.json()
+    raw = result["response"]
 
-    if response.status_code == 200:
-        try:
-            result = response.json()
+    # Parse and pretty print JSON
+    try:
+        parsed = json.loads(raw)
+        print("===== AI RCA RESULT =====")
+        print(json.dumps(parsed, indent=2))
+    except json.JSONDecodeError:
+        print("===== RAW RESPONSE =====")
+        print(raw)
 
-            print("===== AI RCA RESULT =====")
-            print(json.dumps(result, indent=2))
-            break
-        except:
-            print("JSON parsing failed")
-            break
-
-    elif "loading" in response.text.lower():
-        print("Model loading... retrying in 10 sec")
-        time.sleep(10)
-    else:
-        print("API call failed")
-        break
-
-# Fallback (always safe)
-fallback = {
-    "error_type": "Build Failure",
-    "root_cause": "AI response unavailable",
-    "fix_suggestion": "Check logs manually"
-}
-
-print("===== FALLBACK RESULT =====")
-print(json.dumps(fallback, indent=2))
+except Exception as e:
+    print("Ollama call failed:", str(e))

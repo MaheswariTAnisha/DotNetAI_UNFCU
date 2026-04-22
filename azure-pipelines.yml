@@ -2,55 +2,44 @@ trigger:
 - main
 
 pool:
-  vmImage: 'ubuntu-latest'
+  name: 'windows'        # ← your self-hosted pool name
+  # vmImage line removed — not needed for self-hosted
 
 steps:
 
-# Install .NET
 - task: UseDotNet@2
   inputs:
     packageType: 'sdk'
     version: '8.x'
 
-# Build app (intentionally capturing logs)
 - script: |
     echo "Running build..."
     dotnet build wrong.csproj > pipeline.log 2>&1
     exit_code=$?
-
-    echo "Build exit code: $exit_code"
-
     if [ $exit_code -ne 0 ]; then
-      echo "Build failed, but continuing for AI analysis..."
+      echo "Build failed, running AI analysis..."
     fi
-
     exit $exit_code
   displayName: 'Build .NET App'
 
-# Print logs (for visibility)
 - script: |
     echo "===== PIPELINE LOGS ====="
     cat pipeline.log
   displayName: 'Print Logs'
   condition: failed()
 
-# Setup Python
 - task: UsePythonVersion@0
   inputs:
     versionSpec: '3.x'
   condition: failed()
 
-# Install dependencies
 - script: |
-    python -m pip install --upgrade pip
     pip install requests
-  displayName: 'Install Python dependencies'
+  displayName: 'Install Python deps'
   condition: failed()
 
-# Run AI log analysis (HuggingFace)
 - script: |
     python analyze_logs.py
-  env:
-    HF_TOKEN: $(HF_TOKEN)
-  displayName: 'Run AI Log Analysis'
+  displayName: 'Run AI Log Analysis (Ollama)'
   condition: failed()
+  # No env/API key needed — Ollama is local
