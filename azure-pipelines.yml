@@ -5,6 +5,8 @@ pool:
   name: 'windows'        # ← your self-hosted pool name
   # vmImage line removed — not needed for self-hosted
 
+lockBehavior: sequential
+
 steps:
 
 - task: UseDotNet@2
