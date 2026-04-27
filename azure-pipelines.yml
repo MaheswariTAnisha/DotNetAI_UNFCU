@@ -13,17 +13,20 @@ steps:
     packageType: 'sdk'
     version: '8.x'
 
+# ============================================
+# FAILURE 1: Missing project file
+# ============================================
 - script: |
     echo "Running build..."
     dotnet build wrong.csproj > pipeline.log 2>&1
     echo Build exit code: %ERRORLEVEL%
     exit /b %ERRORLEVEL%
-  displayName: 'Build .NET App'
+  displayName: 'Failure 1 - Missing .csproj'
 
 - script: |
-    echo "===== PIPELINE LOGS ====="
+    echo "===== FAILURE 1 LOGS ====="
     type pipeline.log
-  displayName: 'Print Logs'
+  displayName: 'Print Logs - Failure 1'
   condition: failed()
 
 - script: |
@@ -34,5 +37,56 @@ steps:
 
 - script: |
     python analyze_logs.py
-  displayName: 'Run AI Log Analysis (Ollama)'
+  env:
+    FAILURE_TYPE: missing_project_file
+  displayName: 'AI Analysis - Failure 1'
+  condition: failed()
+
+# ============================================
+# FAILURE 2: Wrong NuGet package / restore fail
+# ============================================
+- script: |
+    echo Simulating NuGet restore failure...
+    echo "error NU1101: Unable to find package FakePackage.NotExist. No packages exist with this id in source(s): nuget.org" > pipeline.log 2>&1
+    echo "MSBUILD : error MSB4236: The SDK 'FakeSDK/9.0.0' specified could not be found." >> pipeline.log
+    exit /b 1
+  displayName: 'Failure 2 - NuGet Restore Fail'
+  condition: always()
+
+- script: |
+    echo "===== FAILURE 2 LOGS ====="
+    type pipeline.log
+  displayName: 'Print Logs - Failure 2'
+  condition: failed()
+
+- script: |
+    python analyze_logs.py
+  env:
+    FAILURE_TYPE: nuget_restore_failure
+  displayName: 'AI Analysis - Failure 2'
+  condition: failed()
+
+# ============================================
+# FAILURE 3: Unit test failure
+# ============================================
+- script: |
+    echo Simulating unit test failure...
+    echo "Failed   DemoApp.Tests.CalculatorTests.Add_TwoNumbers_ReturnsWrongResult" > pipeline.log
+    echo "Error Message: Assert.AreEqual failed. Expected: 5. Actual: 4" >> pipeline.log
+    echo "Total tests: 10  Failed: 3  Passed: 7" >> pipeline.log
+    exit /b 1
+  displayName: 'Failure 3 - Unit Test Fail'
+  condition: always()
+
+- script: |
+    echo "===== FAILURE 3 LOGS ====="
+    type pipeline.log
+  displayName: 'Print Logs - Failure 3'
+  condition: failed()
+
+- script: |
+    python analyze_logs.py
+  env:
+    FAILURE_TYPE: unit_test_failure
+  displayName: 'AI Analysis - Failure 3'
   condition: failed()
