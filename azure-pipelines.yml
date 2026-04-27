@@ -15,10 +15,10 @@ steps:
 
 - script: |
     echo "Running build..."
-    dotnet build DemoApp.csproj > pipeline.log 2>&1
+    dotnet build wrong.csproj > pipeline.log 2>&1
     echo Build exit code: %ERRORLEVEL%
     exit /b %ERRORLEVEL%
-  displayName: 'Build .NET App - NuGet Restore Failure'
+  displayName: 'Build .NET App'
 
 - script: |
     echo "===== PIPELINE LOGS ====="
